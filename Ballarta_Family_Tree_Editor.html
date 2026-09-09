@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ballarta · Ballarte Family Tree — Editor</title>
+<style>
+  :root{
+    --bg: #f6ead0;
+    --bg-2: #efdfb8;
+    --ink: #4a3728;
+    --ink-soft: #7a6650;
+    --title: #7a3b3b;
+    --line: #9c8262;
+    --card-shadow: rgba(74,55,40,0.18);
+    --danger: #a1453c;
+    --danger-bg: #f3ded9;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+  }
+
+  body {
+    background-image:
+      radial-gradient(circle at 8% 12%, rgba(255,255,255,0.35) 0, transparent 45%),
+      repeating-linear-gradient(135deg, rgba(156,130,98,0.05) 0 2px, transparent 2px 26px),
+      repeating-linear-gradient(45deg, rgba(156,130,98,0.05) 0 2px, transparent 2px 26px);
+    min-height: 100vh;
+  }
+
+  header {
+    text-align: center;
+    padding: 28px 16px 10px;
+    border-bottom: 1px solid rgba(156,130,98,0.35);
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 28px;
+    letter-spacing: 0.5px;
+    color: var(--title);
+    font-weight: 600;
+  }
+
+  header p.sub {
+    margin: 6px 0 0;
+    font-style: italic;
+    color: var(--ink-soft);
+    font-size: 13px;
+  }
+
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 16px;
+    flex-wrap: wrap;
+  }
+
+  button {
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .btn {
+    background: #fffaf0;
+    border: 1px solid var(--line);
+    color: var(--ink);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .btn:hover { background: #fff3dd; }
+
+  .btn-primary {
+    background: var(--title);
+    color: #fdf5e6;
+    border: 1px solid var(--title);
+  }
+  .btn-primary:hover { background: #642f2f; }
+
+  .btn-danger {
+    background: var(--danger);
+    color: #fff;
+    border: 1px solid var(--danger);
+  }
+
+  #status {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-height: 18px;
+    padding-bottom: 4px;
+  }
+
+  #treeScroll {
+    overflow-x: auto;
+    padding: 30px 40px 80px;
+  }
+
+  #treeCanvas {
+    position: relative;
+    display: inline-block;
+    min-width: 100%;
+  }
+
+  #connectorsOverlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #treeContainer {
+    display: flex;
+    gap: 70px;
+    justify-content: center;
+    min-width: fit-content;
+    padding: 0 20px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .subtree {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .couple-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .spouse-line {
+    width: 22px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--line);
+  }
+
+  .children-wrap {
+    padding-top: 36px;
+  }
+
+  .children-row {
+    display: flex;
+    gap: 34px;
+    align-items: flex-start;
+  }
+
+  .child-item {
+    position: relative;
+  }
+
+  .person-box {
+    position: relative;
+    background: #fffdf6;
+    border-radius: 8px;
+    padding: 8px 14px 7px;
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    box-shadow: 0 1px 3px var(--card-shadow);
+    cursor: pointer;
+    border: 2px solid #999;
+  }
+  .person-box:hover { filter: brightness(0.97); }
+  .person-box.placeholder {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--ink-soft);
+    background: repeating-linear-gradient(45deg, #fffdf6 0 6px, #f3ead6 6px 12px);
+  }
+
+  .note {
+    display: block;
+    font-size: 10px;
+    font-weight: 400;
+    font-style: italic;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+
+  /* Modal */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(50,38,26,0.45);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .overlay.open { display: flex; }
+
+  .modal {
+    background: #fbf3e1;
+    border-radius: 10px;
+    padding: 22px 26px;
+    width: 380px;
+    max-width: 92vw;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+    border: 1px solid var(--line);
+  }
+
+  .modal h2 {
+    margin: 0 0 14px;
+    font-size: 18px;
+    color: var(--title);
+  }
+
+  .field { margin-bottom: 12px; position: relative; }
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-soft);
+    margin-bottom: 4px;
+  }
+  .field input[type=text], .field input[type=number], .field select {
+    width: 100%;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 14px;
+    background: #fffdf6;
+    color: var(--ink);
+  }
+
+  .autocomplete-results {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 20;
+    background: #fffdf6;
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    margin-top: 3px;
+    max-height: 200px;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    display: none;
+  }
+  .autocomplete-results.open { display: block; }
+
+  .autocomplete-item {
+    padding: 7px 10px;
+    font-size: 13px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(156,130,98,0.15);
+  }
+  .autocomplete-item:last-child { border-bottom: none; }
+  .autocomplete-item:hover, .autocomplete-item.highlighted {
+    background: #f3ead0;
+  }
+  .autocomplete-item .gen-tag {
+    color: var(--ink-soft);
+    font-size: 11px;
+    font-style: italic;
+    margin-left: 6px;
+  }
+  .autocomplete-empty {
+    padding: 8px 10px;
+    font-size: 13px;
+    color: var(--ink-soft);
+    font-style: italic;
+  }
+
+  .radio-group label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--ink);
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .error-text {
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 6px;
+    min-height: 14px;
+  }
+
+  #fileStatus {
+    text-align: center;
+    font-size: 12px;
+    color: var(--ink-soft);
+    padding-bottom: 10px;
+  }
+  #fileStatus.unsaved { color: var(--danger); font-weight: 600; }
+
+  #emptyState {
+    text-align: center;
+    color: var(--ink-soft);
+    font-style: italic;
+    padding: 60px 20px;
+  }
+
+  .warn-box {
+    background: var(--danger-bg);
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--ink-soft);
+    padding: 10px 0 24px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Ballarta · Ballarte Family Tree</h1>
+  <p class="sub">Shared editor — add people, record marriages, and correct entries. Changes are visible to everyone with this page.</p>
+</header>
+
+<div class="toolbar">
+  <button class="btn btn-primary" id="addPersonBtn">+ Add person</button>
+</div>
+<div id="status"></div>
+<div id="fileStatus"></div>
+
+<div id="treeScroll">
+  <div id="treeCanvas">
+    <svg id="connectorsOverlay"></svg>
+    <div id="treeContainer"></div>
+  </div>
+  <div id="emptyState" style="display:none;">Connecting to the shared tree…</div>
+</div>
+
+<footer>Generation numbers shown as small badges. Colors cycle by generation, matching the original tree diagram.</footer>
+
+<!-- Add/Edit Modal -->
+<div class="overlay" id="personOverlay">
+  <div class="modal">
+    <h2 id="modalTitle">Add person</h2>
+    <div class="field">
+      <label for="nameInput">Full name</label>
+      <input type="text" id="nameInput" placeholder="e.g. Alexandra Ballarte">
+    </div>
+
+    <div class="field" id="relationField">
+      <label>Relationship</label>
+      <div class="radio-group">
+        <label><input type="radio" name="relType" value="spouse" checked> Spouse of an existing person</label>
+        <label><input type="radio" name="relType" value="child"> Child of an existing person</label>
+      </div>
+    </div>
+
+    <div class="field" id="relatedPersonField">
+      <label for="relatedPersonInput">Existing person</label>
+      <input type="text" id="relatedPersonInput" autocomplete="off" placeholder="Start typing a name…">
+      <input type="hidden" id="relatedPersonId">
+      <div id="relatedPersonResults" class="autocomplete-results"></div>
+    </div>
+
+    <div class="field">
+      <label for="noteInput">Note (optional — e.g. "no children", marriage date)</label>
+      <input type="text" id="noteInput" placeholder="optional">
+    </div>
+
+    <div class="error-text" id="modalError"></div>
+
+    <div class="modal-actions">
+      <button class="btn" id="cancelModalBtn">Cancel</button>
+      <button class="btn btn-primary" id="saveModalBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit existing person modal -->
+<div class="overlay" id="editOverlay">
+  <div class="modal">
+    <h2>Edit person</h2>
+    <div class="field">
+      <label for="editNameInput">Full name</label>
+      <input type="text" id="editNameInput">
+    </div>
+    <div class="field">
+      <label for="editGenerationInput">Generation number</label>
+      <input type="number" id="editGenerationInput" min="1">
+    </div>
+    <div class="field">
+      <label for="editNoteInput">Note</label>
+      <input type="text" id="editNoteInput" placeholder="optional">
+    </div>
+    <div class="error-text" id="editModalError"></div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="deleteBtn" style="margin-right:auto;">Delete…</button>
+      <button class="btn" id="cancelEditBtn">Cancel</button>
+      <button class="btn btn-primary" id="saveEditBtn">Save changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm modal -->
+<div class="overlay" id="deleteOverlay">
+  <div class="modal">
+    <h2>Delete <span id="deleteName"></span>?</h2>
+    <div id="deleteWarning"></div>
+    <div class="error-text" id="deleteModalError"></div>
+    <div class="modal-actions">
+      <button class="btn" id="cancelDeleteBtn">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const GEN_COLORS = ['#d98a5f','#d97ba0','#7fae63','#4fb3b0','#5f9bd9','#a377c9','#c98f4a','#5fae8f'];
+
+let data = { persons: {}, unions: {} };
+let editingPersonId = null;
+
+function genColor(g){ return GEN_COLORS[(g-1) % GEN_COLORS.length]; }
+
+function seedData(){
+  const p = (id, name, generation, extra) => { data.persons[id] = Object.assign({id, name, generation, note:'', parentUnionId:null}, extra||{}); };
+  const u = (id, partnerIds, childIds) => { data.unions[id] = {id, partnerIds, childIds: childIds||[]}; };
+
+  p('esteban','Esteban Ballarta',1);
+  p('unknown-spouse-1','(spouse unknown)',1,{placeholder:true});
+  u('u1',['esteban','unknown-spouse-1'],['leandro']);
+
+  p('leandro','Leandro Ballarta',2,{parentUnionId:'u1'});
+  p('escolastica','Escolástica Rodriguez',2);
+  u('u2',['leandro','escolastica'],['jose']);
+
+  p('jose','José Ballarta',3,{parentUnionId:'u2'});
+  p('manuela-morales','Manuela Morales',3);
+  u('u3',['jose','manuela-morales'],['felipe']);
+
+  p('felipe','Felipe Ballarte',4,{parentUnionId:'u3'});
+  p('manuela-michay','Manuela Michay',4);
+  u('u4',['felipe','manuela-michay'],['celestino']);
+
+  p('celestino','Celestino Ballarte',5,{parentUnionId:'u4'});
+  p('teodora-fernandez','Teodora Fernández',5);
+  u('u5',['celestino','teodora-fernandez'],['elciario']);
+
+  p('elciario','Elciario Ballarte',6,{parentUnionId:'u5'});
+  p('teodora-romero','Teodora Romero',6);
+  u('u6',['elciario','teodora-romero'],['marciano','david','ivo','virginia','susana']);
+
+  p('marciano','Marciano Ballarte',7,{parentUnionId:'u6'});
+  p('estela','Estela Duda',7);
+  u('u7a',['marciano','estela'],['max']);
+
+  p('david','David Ballarte',7,{parentUnionId:'u6'});
+  p('teresa-rosas','Teresa Rosas',7);
+  u('u7b',['david','teresa-rosas'],['javier','sven','evelyn','alexander','jacklyn']);
+
+  p('ivo','Ivo Ballarte',7,{parentUnionId:'u6'});
+  p('esther-ortiz','Esther Ortiz',7);
+  u('u7c',['ivo','esther-ortiz'],['fernando','veronica']);
+
+  p('virginia','Virginia Ballarte',7,{parentUnionId:'u6'});
+  p('vicente-angulo','Vicente Angulo',7);
+  u('u7d',['virginia','vicente-angulo'],['cecilia','monica']);
+
+  p('susana','Susana Ballarte',7,{parentUnionId:'u6', note:'no children'});
+
+  p('max','Max Ballarte',8,{parentUnionId:'u7a'});
+  p('crystal','Crystal Van Houten',8);
+  u('u8a',['max','crystal'],['chelsey']);
+
+  p('javier','Javier Ballarte',8,{parentUnionId:'u7b'});
+  p('sven','Sven Ballarte',8,{parentUnionId:'u7b'});
+  p('evelyn','Evelyn Ballarte',8,{parentUnionId:'u7b'});
+
+  p('alexander','Alexander Ballarte',8,{parentUnionId:'u7b'});
+  p('maria-fernanda','Maria Fernanda Ascuntar',8);
+  u('u8b',['alexander','maria-fernanda'],['alexandra','mariana']);
+
+  p('jacklyn','Jacklyn Ballarte',8,{parentUnionId:'u7b'});
+  p('gustavo','Gustavo Padilla',8);
+  u('u8c',['jacklyn','gustavo'],[]);
+
+  p('fernando','Fernando Ballarte',8,{parentUnionId:'u7c'});
+
+  p('veronica','Veronica Ballarte',8,{parentUnionId:'u7c'});
+  p('carlos-ruiz-sr','Carlos Ruiz',8);
+  u('u8d',['veronica','carlos-ruiz-sr'],['carlos-ruiz-jr','daniela']);
+
+  p('cecilia','Cecilia Angulo Ballarte',8,{parentUnionId:'u7d'});
+  p('willy','Willy Valcarcel',8);
+  u('u8e',['cecilia','willy'],['vanesa','alonso']);
+
+  p('monica','Monica Angulo Ballarte (Skinner)',8,{parentUnionId:'u7d'});
+  p('elliot','Elliot Skinner',8);
+  u('u8f',['monica','elliot'],['stephanie','sean']);
+
+  p('chelsey','Chelsey Ballarte-Van Houten',9,{parentUnionId:'u8a'});
+  p('alexandra','Alexandra Ballarte',9,{parentUnionId:'u8b'});
+  p('mariana','Mariana Ballarte',9,{parentUnionId:'u8b'});
+  p('carlos-ruiz-jr','Carlos Ruiz Jr.',9,{parentUnionId:'u8d'});
+  p('daniela','Daniela Ruiz',9,{parentUnionId:'u8d'});
+  p('vanesa','Vanesa Valcarcel',9,{parentUnionId:'u8e'});
+  p('alonso','Alonso Valcarcel',9,{parentUnionId:'u8e'});
+  p('stephanie','Stephanie Skinner',9,{parentUnionId:'u8f'});
+
+  p('sean','Sean Skinner',9,{parentUnionId:'u8f'});
+  p('carla-arteaga','Carla Arteaga',9);
+  u('u9a',['sean','carla-arteaga'],['roman']);
+
+  p('roman','Roman Octavio Skinner-Arteaga',10,{parentUnionId:'u9a'});
+}
+
+function setStatus(msg, isError){
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = isError ? '#a1453c' : '#7a6650';
+  if(!isError){ setTimeout(()=>{ if(el.textContent===msg) el.textContent=''; }, 2500); }
+}
+
+// ---- Firebase Realtime Database connection ----
+const FIREBASE_URL = 'https://ballarte-family-tree-default-rtdb.firebaseio.com';
+const DB_PATH = '/family-tree.json';
+let applyingRemoteUpdate = false;
+
+function setFileStatus(text, isError){
+  const el = document.getElementById('fileStatus');
+  el.textContent = text;
+  el.classList.toggle('unsaved', !!isError);
+}
+
+async function loadFromFirebase(){
+  try {
+    const res = await fetch(FIREBASE_URL + DB_PATH);
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const remote = await res.json();
+    if(remote){
+      data = remote;
+      setFileStatus('Connected — showing the shared tree.', false);
+    } else {
+      seedData();
+      await saveToFirebase();
+      setFileStatus('Connected — started the tree with the existing family data.', false);
+    }
+  } catch(e){
+    setFileStatus('Could not connect to the shared database: ' + e.message, true);
+    seedData();
+  }
+  render();
+  startLiveUpdates();
+}
+
+async function saveToFirebase(){
+  try {
+    const res = await fetch(FIREBASE_URL + DB_PATH, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(data)
+    });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+  } catch(e){
+    setStatus('Save failed — your change may not be visible to others: ' + e.message, true);
+  }
+}
+
+function startLiveUpdates(){
+  try {
+    const es = new EventSource(FIREBASE_URL + DB_PATH.replace('.json', '.json'));
+    es.addEventListener('put', (e) => {
+      try {
+        const payload = JSON.parse(e.data);
+        if(payload.path === '/'){
+          applyingRemoteUpdate = true;
+          data = payload.data || { persons: {}, unions: {} };
+          render();
+          applyingRemoteUpdate = false;
+        }
+      } catch(err){ /* ignore malformed event */ }
+    });
+    es.onerror = () => { /* browser auto-reconnects EventSource on its own */ };
+  } catch(e){
+    // Live updates aren't critical — the page still works, just without instant push updates.
+  }
+}
+
+async function afterMutation(){
+  render();
+  await saveToFirebase();
+}
+
+function findUnionAsPartner(personId){
+  return Object.values(data.unions).find(u => u.partnerIds.includes(personId)) || null;
+}
+
+function isPartnerTwoAnywhere(personId){
+  return Object.values(data.unions).some(u => u.partnerIds[1] === personId);
+}
+
+
+function isRootPerson(person){
+  return !person.parentUnionId && !isPartnerTwoAnywhere(person.id);
+}
+
+function personBoxHtml(person, isSelf){
+  const color = genColor(person.generation);
+  const placeholderClass = person.placeholder ? ' placeholder' : '';
+  const noteHtml = person.note ? `<span class="note">${escapeHtml(person.note)}</span>` : '';
+  const selfAttr = isSelf ? ` data-self-of="${person.id}"` : '';
+  return `<div class="person-box${placeholderClass}" style="border-color:${color};" data-person-id="${person.id}"${selfAttr}>
+    ${escapeHtml(person.name)}${noteHtml}
+  </div>`;
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderSubtree(personId){
+  const person = data.persons[personId];
+  if(!person) return '';
+  const union = findUnionAsPartner(personId);
+  const partnerId = union ? union.partnerIds.find(id => id !== personId) : null;
+  const partner = partnerId ? data.persons[partnerId] : null;
+  const lineColor = genColor(person.generation);
+
+  const hasChildren = !!(union && union.childIds && union.childIds.length);
+
+  let coupleHtml = personBoxHtml(person, true);
+  if(partner){
+    const spouseAnchorAttr = hasChildren ? ` data-union-anchor="${union.id}"` : '';
+    coupleHtml += `<div class="spouse-line"${spouseAnchorAttr} style="background:${lineColor};"></div>${personBoxHtml(partner, false)}`;
+  }
+
+  let childrenHtml = '';
+  if(hasChildren){
+    const items = union.childIds.map(cid => `<div class="child-item">${renderSubtree(cid)}</div>`).join('');
+    childrenHtml = `<div class="children-wrap">
+        <div class="children-row">${items}</div>
+      </div>`;
+  }
+
+  // When there's no partner, the couple-row is just the one box, so anchor there instead.
+  const coupleRowAnchorAttr = (hasChildren && !partner) ? ` data-union-anchor="${union.id}"` : '';
+
+  return `<div class="subtree">
+    <div class="couple-row"${coupleRowAnchorAttr}>${coupleHtml}</div>
+    ${childrenHtml}
+  </div>`;
+}
+
+function render(){
+  const container = document.getElementById('treeContainer');
+  const empty = document.getElementById('emptyState');
+  const svg = document.getElementById('connectorsOverlay');
+  const roots = Object.values(data.persons).filter(isRootPerson);
+
+  if(roots.length === 0){
+    container.innerHTML = '';
+    svg.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // sort roots by generation then name for stable display
+  roots.sort((a,b) => a.generation - b.generation || a.name.localeCompare(b.name));
+  container.innerHTML = roots.map(r => renderSubtree(r.id)).join('');
+
+  container.querySelectorAll('.person-box').forEach(box => {
+    box.addEventListener('click', () => openEditModal(box.getAttribute('data-person-id')));
+  });
+
+  requestAnimationFrame(drawConnectors);
+}
+
+function drawConnectors(){
+  const svg = document.getElementById('connectorsOverlay');
+  const container = document.getElementById('treeContainer');
+  const containerRect = container.getBoundingClientRect();
+
+  svg.setAttribute('width', containerRect.width);
+  svg.setAttribute('height', containerRect.height);
+  svg.setAttribute('viewBox', `0 0 ${containerRect.width} ${containerRect.height}`);
+  svg.innerHTML = '';
+
+  const TRUNK = 18; // vertical px from couple-row bottom to the sibling bar
+
+  Object.values(data.unions).forEach(union => {
+    if(!union.childIds || !union.childIds.length) return;
+    const anchorEl = container.querySelector(`[data-union-anchor="${union.id}"]`);
+    const selfBoxEl = container.querySelector(`[data-self-of="${union.partnerIds[0]}"]`);
+    if(!anchorEl || !selfBoxEl) return;
+    const anchorRect = anchorEl.getBoundingClientRect();
+    const selfBoxRect = selfBoxEl.getBoundingClientRect();
+    const anchorX = anchorRect.left + anchorRect.width / 2 - containerRect.left;
+    const anchorY = selfBoxRect.bottom - containerRect.top;
+
+    const childPoints = union.childIds.map(cid => {
+      const el = container.querySelector(`[data-self-of="${cid}"]`);
+      if(!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2 - containerRect.left, y: r.top - containerRect.top };
+    }).filter(Boolean);
+    if(!childPoints.length) return;
+
+    const anchorPerson = data.persons[union.partnerIds[0]];
+    const color = genColor(anchorPerson ? anchorPerson.generation : 1);
+    const barY = anchorY + TRUNK;
+    const xs = childPoints.map(pt => pt.x).concat([anchorX]);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+
+    drawLine(svg, anchorX, anchorY, anchorX, barY, color);
+    drawLine(svg, minX, barY, maxX, barY, color);
+    drawDot(svg, anchorX, barY, color);
+    childPoints.forEach(pt => drawLine(svg, pt.x, barY, pt.x, pt.y, color));
+  });
+}
+
+function drawLine(svg, x1, y1, x2, y2, color){
+  const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+  line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+  line.setAttribute('stroke', color);
+  line.setAttribute('stroke-width', '3');
+  line.setAttribute('stroke-linecap', 'round');
+  svg.appendChild(line);
+}
+
+function drawDot(svg, x, y, color){
+  const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  circle.setAttribute('cx', x); circle.setAttribute('cy', y);
+  circle.setAttribute('r', '5');
+  circle.setAttribute('fill', color);
+  circle.setAttribute('stroke', '#fffdf6');
+  circle.setAttribute('stroke-width', '2');
+  svg.appendChild(circle);
+}
+
+window.addEventListener('resize', () => { if(document.getElementById('treeContainer').children.length) drawConnectors(); });
+
+/* ---------- Add modal ---------- */
+
+function getSearchablePeople(){
+  return Object.values(data.persons).filter(p => !p.placeholder)
+    .sort((a,b) => a.generation - b.generation || a.name.localeCompare(b.name));
+}
+
+function setupTypeahead(inputId, hiddenId, resultsId){
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenId);
+  const resultsEl = document.getElementById(resultsId);
+  let matches = [];
+  let highlightIndex = -1;
+
+  function closeResults(){
+    resultsEl.classList.remove('open');
+    resultsEl.innerHTML = '';
+    highlightIndex = -1;
+  }
+
+  function renderResults(query){
+    const q = query.trim().toLowerCase();
+    if(!q){ closeResults(); return; }
+    matches = getSearchablePeople().filter(p => p.name.toLowerCase().includes(q)).slice(0, 25);
+    if(matches.length === 0){
+      resultsEl.innerHTML = '<div class="autocomplete-empty">No matching names</div>';
+      resultsEl.classList.add('open');
+      highlightIndex = -1;
+      return;
+    }
+    resultsEl.innerHTML = matches.map((p, i) =>
+      `<div class="autocomplete-item" data-index="${i}">${escapeHtml(p.name)}<span class="gen-tag">Gen ${p.generation}</span></div>`
+    ).join('');
+    resultsEl.classList.add('open');
+    highlightIndex = -1;
+    resultsEl.querySelectorAll('.autocomplete-item').forEach(el => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        selectMatch(parseInt(el.getAttribute('data-index'), 10));
+      });
+    });
+  }
+
+  function selectMatch(index){
+    const p = matches[index];
+    if(!p) return;
+    input.value = p.name;
+    hidden.value = p.id;
+    closeResults();
+  }
+
+  function updateHighlight(){
+    resultsEl.querySelectorAll('.autocomplete-item').forEach((el, i) => {
+      el.classList.toggle('highlighted', i === highlightIndex);
+    });
+  }
+
+  input.addEventListener('input', () => {
+    hidden.value = '';
+    renderResults(input.value);
+  });
+
+  input.addEventListener('focus', () => {
+    if(input.value.trim()) renderResults(input.value);
+  });
+
+  input.addEventListener('blur', () => closeResults());
+
+  input.addEventListener('keydown', (e) => {
+    if(!resultsEl.classList.contains('open') || matches.length === 0) return;
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      highlightIndex = Math.min(highlightIndex + 1, matches.length - 1);
+      updateHighlight();
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      highlightIndex = Math.max(highlightIndex - 1, 0);
+      updateHighlight();
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      selectMatch(highlightIndex >= 0 ? highlightIndex : 0);
+    } else if(e.key === 'Escape'){
+      closeResults();
+    }
+  });
+
+  return {
+    reset(){ input.value = ''; hidden.value = ''; closeResults(); }
+  };
+}
+
+const relatedPersonTypeahead = setupTypeahead('relatedPersonInput', 'relatedPersonId', 'relatedPersonResults');
+
+function openAddModal(){
+  document.getElementById('modalTitle').textContent = 'Add person';
+  document.getElementById('nameInput').value = '';
+  document.getElementById('noteInput').value = '';
+  document.getElementById('modalError').textContent = '';
+  document.querySelector('input[name=relType][value=spouse]').checked = true;
+  relatedPersonTypeahead.reset();
+  document.getElementById('personOverlay').classList.add('open');
+  document.getElementById('nameInput').focus();
+}
+
+document.getElementById('addPersonBtn').addEventListener('click', openAddModal);
+document.getElementById('cancelModalBtn').addEventListener('click', () => document.getElementById('personOverlay').classList.remove('open'));
+
+document.getElementById('saveModalBtn').addEventListener('click', async () => {
+  const name = document.getElementById('nameInput').value.trim();
+  const note = document.getElementById('noteInput').value.trim();
+  const relType = document.querySelector('input[name=relType]:checked').value;
+  const errorEl = document.getElementById('modalError');
+
+  if(!name){ errorEl.textContent = 'Please enter a name.'; return; }
+
+  const newId = slugify(name);
+  if(data.persons[newId]){ errorEl.textContent = 'Someone with a very similar name/ID already exists. Try adding a middle name or suffix to distinguish them.'; return; }
+
+  {
+    const relatedId = document.getElementById('relatedPersonId').value;
+    const related = data.persons[relatedId];
+    if(!related){ errorEl.textContent = 'Please pick an existing person from the list.'; return; }
+
+    if(relType === 'spouse'){
+      let union = findUnionAsPartner(relatedId);
+      if(union && union.partnerIds.length > 1 && union.partnerIds.every(id => id)){
+        errorEl.textContent = related.name + ' already has a recorded spouse. Edit or remove that entry first.';
+        return;
+      }
+      data.persons[newId] = {id:newId, name, generation:related.generation, note, parentUnionId:null};
+      if(union){
+        union.partnerIds[1] = newId;
+      } else {
+        const unionId = 'u_' + newId;
+        data.unions[unionId] = {id:unionId, partnerIds:[relatedId, newId], childIds:[]};
+      }
+    } else if(relType === 'child'){
+      let union = findUnionAsPartner(relatedId);
+      if(!union){
+        const unionId = 'u_' + relatedId + '_children';
+        union = {id:unionId, partnerIds:[relatedId], childIds:[]};
+        data.unions[unionId] = union;
+      }
+      data.persons[newId] = {id:newId, name, generation:related.generation + 1, note, parentUnionId:union.id};
+      union.childIds.push(newId);
+    }
+  }
+
+  await afterMutation();
+  document.getElementById('personOverlay').classList.remove('open');
+  setStatus('Added ' + name + '.');
+});
+
+function slugify(name){
+  return name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+
+/* ---------- Edit modal ---------- */
+
+function openEditModal(personId){
+  const person = data.persons[personId];
+  if(!person || person.placeholder) return;
+  editingPersonId = personId;
+  document.getElementById('editNameInput').value = person.name;
+  document.getElementById('editGenerationInput').value = person.generation;
+  document.getElementById('editNoteInput').value = person.note || '';
+  document.getElementById('editModalError').textContent = '';
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+document.getElementById('cancelEditBtn').addEventListener('click', () => document.getElementById('editOverlay').classList.remove('open'));
+
+document.getElementById('saveEditBtn').addEventListener('click', async () => {
+  const person = data.persons[editingPersonId];
+  const name = document.getElementById('editNameInput').value.trim();
+  const gen = parseInt(document.getElementById('editGenerationInput').value, 10);
+  const note = document.getElementById('editNoteInput').value.trim();
+  const errorEl = document.getElementById('editModalError');
+
+  if(!name){ errorEl.textContent = 'Name cannot be empty.'; return; }
+  if(!gen || gen < 1){ errorEl.textContent = 'Generation must be a positive number.'; return; }
+
+  person.name = name;
+  person.generation = gen;
+  person.note = note;
+
+  await afterMutation();
+  document.getElementById('editOverlay').classList.remove('open');
+  setStatus('Updated ' + name + '.');
+});
+
+/* ---------- Delete flow ---------- */
+
+document.getElementById('deleteBtn').addEventListener('click', () => {
+  const person = data.persons[editingPersonId];
+  const union = findUnionAsPartner(editingPersonId);
+  const descendantCount = union ? countDescendants(union.childIds) : 0;
+
+  document.getElementById('deleteName').textContent = person.name;
+  const warnEl = document.getElementById('deleteWarning');
+  if(descendantCount > 0){
+    warnEl.innerHTML = `<div class="warn-box">This person has ${descendantCount} descendant${descendantCount===1?'':'s'} recorded below them. Deleting will also permanently remove all of them.</div>`;
+  } else {
+    warnEl.innerHTML = '<div class="warn-box">This will permanently remove this entry.</div>';
+  }
+  document.getElementById('deleteModalError').textContent = '';
+  document.getElementById('editOverlay').classList.remove('open');
+  document.getElementById('deleteOverlay').classList.add('open');
+});
+
+document.getElementById('cancelDeleteBtn').addEventListener('click', () => document.getElementById('deleteOverlay').classList.remove('open'));
+
+function countDescendants(childIds){
+  let count = 0;
+  for(const cid of childIds){
+    count += 1;
+    const u = findUnionAsPartner(cid);
+    if(u && u.childIds) count += countDescendants(u.childIds);
+  }
+  return count;
+}
+
+function deletePersonCascade(personId){
+  const person = data.persons[personId];
+  if(!person) return;
+
+  const union = findUnionAsPartner(personId);
+  if(union){
+    for(const cid of union.childIds.slice()){
+      deletePersonCascade(cid);
+    }
+    delete data.unions[union.id];
+  }
+
+  if(person.parentUnionId && data.unions[person.parentUnionId]){
+    const parentUnion = data.unions[person.parentUnionId];
+    parentUnion.childIds = parentUnion.childIds.filter(id => id !== personId);
+  }
+
+  delete data.persons[personId];
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', async () => {
+  const name = data.persons[editingPersonId] ? data.persons[editingPersonId].name : 'Person';
+  deletePersonCascade(editingPersonId);
+  await afterMutation();
+  document.getElementById('deleteOverlay').classList.remove('open');
+  setStatus('Deleted ' + name + '.');
+});
+
+/* ---------- Init ---------- */
+loadFromFirebase();
+</script>
+
+</body>
+</html>
